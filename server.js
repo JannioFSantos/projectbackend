@@ -2,9 +2,17 @@ require('dotenv').config();
 const express = require('express');
 const { sequelize } = require('./src/models');
 const setupSwagger = require('./src/config/swagger');
+const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configurar CORS
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Middlewares
 const bodyParser = require('body-parser');
