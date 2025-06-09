@@ -31,5 +31,21 @@ const options = {
 const specs = swaggerJsdoc(options);
 
 module.exports = (app) => {
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+  app.use('/api-docs', 
+    swaggerUi.serve,
+    (req, res, next) => {
+      swaggerUi.setup(specs)(req, res, (err) => {
+        if (err) {
+          console.error('Erro ao configurar Swagger UI:', err);
+          return res.status(500).json({ error: 'Erro ao carregar documentação' });
+        }
+        next();
+      });
+    }
+  );
+  
+  // Rota adicional para garantir que a documentação seja acessível
+  app.get('/api-docs', (req, res) => {
+    res.redirect('/api-docs/index.html');
+  });
 };

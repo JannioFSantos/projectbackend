@@ -11,16 +11,13 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.json({ type: 'application/json', limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
-// Configurar Swagger
-setupSwagger(app);
-
 // Testar conexão com o banco de dados
 sequelize.authenticate()
   .then(() => {
     console.log('Conexão com o banco de dados estabelecida com sucesso.');
     
-    // Sincronizar modelos com o banco de dados
-    return sequelize.sync({ alter: true });
+    // Verificar apenas a conexão, sem sincronização automática
+    return Promise.resolve();
   })
   .then(() => {
     console.log('Modelos sincronizados com o banco de dados.');
@@ -47,6 +44,9 @@ const productRoutes = require('./src/routes/productRoutes');
 app.use('/v1/user', userRoutes);
 app.use('/v1/category', categoryRoutes);
 app.use('/v1/product', productRoutes);
+
+// Configurar Swagger - DEVE vir depois das rotas principais
+setupSwagger(app);
 
 // Rota de teste
 app.get('/', (req, res) => {

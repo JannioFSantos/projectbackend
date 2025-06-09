@@ -1,6 +1,17 @@
+'use strict';
 const { User } = require('../models');
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+
+// Helper para formatar erros do Sequelize
+const formatSequelizeErrors = (error) => {
+  if (error.errors) {
+    return error.errors.map(err => ({
+      field: err.path,
+      message: err.message
+    }));
+  }
+  return [{ message: error.message }];
+};
 
 // Criar novo usuário
 const createUser = async (req, res) => {
@@ -8,16 +19,16 @@ const createUser = async (req, res) => {
     const { firstname, surname, email, password, confirmPassword } = req.body;
 
     if (password !== confirmPassword) {
-      return res.status(400).json({ error: 'As senhas não coincidem' });
+      return res.status(400).json({ 
+        errors: [{ field: 'password', message: 'As senhas não coincidem' }] 
+      });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
     const user = await User.create({
       firstname,
       surname,
       email,
-      password: hashedPassword
+      password // O hash é feito automaticamente pelo modelo
     });
 
     return res.status(201).json({
@@ -27,8 +38,16 @@ const createUser = async (req, res) => {
       email: user.email
     });
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ error: 'Erro ao criar usuário' });
+    if (error.name === 'SequelizeValidationError' || 
+        error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ 
+        errors: formatSequelizeErrors(error) 
+      });
+    }
+    console.error('Erro ao criar usuário:', error);
+    return res.status(500).json({ 
+      error: 'Ocorreu um erro ao processar sua solicitação' 
+    });
   }
 };
 
@@ -45,8 +64,10 @@ const getUserById = async (req, res) => {
 
     return res.status(200).json(user);
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ error: 'Erro ao buscar usuário' });
+    console.error('Erro ao buscar usuário:', error);
+    return res.status(500).json({ 
+      error: 'Ocorreu um erro ao processar sua solicitação' 
+    });
   }
 };
 
@@ -63,8 +84,15 @@ const updateUser = async (req, res) => {
     await user.update({ firstname, surname, email });
     return res.status(204).end();
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ error: 'Erro ao atualizar usuário' });
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ 
+        errors: formatSequelizeErrors(error) 
+      });
+    }
+    console.error('Erro ao atualizar usuário:', error);
+    return res.status(500).json({ 
+      error: 'Ocorreu um erro ao processar sua solicitação' 
+    });
   }
 };
 
@@ -80,8 +108,10 @@ const deleteUser = async (req, res) => {
     await user.destroy();
     return res.status(204).end();
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ error: 'Erro ao deletar usuário' });
+    console.error('Erro ao deletar usuário:', error);
+    return res.status(500).json({ 
+      error: 'Ocorreu um erro ao processar sua solicitação' 
+    });
   }
 };
 
@@ -89,27 +119,46 @@ const deleteUser = async (req, res) => {
 const generateToken = async (req, res) => {
   try {
     const { email, password } = req.body;
+    
     const user = await User.findOne({ where: { email } });
-
     if (!user) {
-      return res.status(400).json({ error: 'Credenciais inválidas' });
+      return res.status(400).json({ 
+        error: 'Email ou senha incorretos' 
+      });
     }
 
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(400).json({ error: 'Credenciais inválidas' });
+    const isValidPassword = await user.validPassword(password);
+    if (!isValidPassword) {
+      return res.status(400).json({ 
+        error: 'Email ou senha incorretos' 
+      });
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { 
+        id: user.id, 
+        email: user.email 
+      },
+      process.env.JWT_SECRET || 'secret_key_fallback',
+      { 
+        expiresIn: process.env.JWT_EXPIRES_IN || '1h' 
+      }
     );
 
-    return res.status(200).json({ token });
+    return res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        firstname: user.firstname,
+        surname: user.surname,
+        email: user.email
+      }
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ error: 'Erro ao gerar token' });
+    console.error('Erro ao gerar token:', error);
+    return res.status(500).json({ 
+      error: 'Ocorreu um erro ao processar sua solicitação' 
+    });
   }
 };
 

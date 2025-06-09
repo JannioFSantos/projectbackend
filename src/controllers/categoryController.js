@@ -1,6 +1,18 @@
+'use strict';
 const { Category } = require('../models');
 
-// Listar categorias (com paginação)
+// Helper para formatar erros do Sequelize
+const formatSequelizeErrors = (error) => {
+  if (error.errors) {
+    return error.errors.map(err => ({
+      field: err.path,
+      message: err.message
+    }));
+  }
+  return [{ message: error.message }];
+};
+
+// Listar categorias
 const listCategories = async (req, res) => {
   try {
     const { limit = 12, page = 1, fields, use_in_menu } = req.query;
@@ -23,8 +35,10 @@ const listCategories = async (req, res) => {
       page: parseInt(page)
     });
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ error: 'Erro ao listar categorias' });
+    console.error('Erro ao listar categorias:', error);
+    return res.status(500).json({ 
+      error: 'Ocorreu um erro ao processar sua solicitação' 
+    });
   }
 };
 
@@ -41,8 +55,10 @@ const getCategoryById = async (req, res) => {
 
     return res.status(200).json(category);
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ error: 'Erro ao buscar categoria' });
+    console.error('Erro ao buscar categoria:', error);
+    return res.status(500).json({ 
+      error: 'Ocorreu um erro ao processar sua solicitação' 
+    });
   }
 };
 
@@ -50,11 +66,36 @@ const getCategoryById = async (req, res) => {
 const createCategory = async (req, res) => {
   try {
     const { name, slug, use_in_menu = false } = req.body;
+    
+    // Validações básicas
+    if (!name || !slug) {
+      return res.status(400).json({ 
+        errors: [{ 
+          field: !name ? 'name' : 'slug', 
+          message: 'Campo obrigatório' 
+        }] 
+      });
+    }
+
     const category = await Category.create({ name, slug, use_in_menu });
-    return res.status(201).json(category);
+    
+    return res.status(201).json({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      use_in_menu: category.use_in_menu
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ error: 'Erro ao criar categoria' });
+    if (error.name === 'SequelizeValidationError' || 
+        error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ 
+        errors: formatSequelizeErrors(error) 
+      });
+    }
+    console.error('Erro ao criar categoria:', error);
+    return res.status(500).json({ 
+      error: 'Ocorreu um erro ao processar sua solicitação' 
+    });
   }
 };
 
@@ -71,8 +112,15 @@ const updateCategory = async (req, res) => {
     await category.update({ name, slug, use_in_menu });
     return res.status(204).end();
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ error: 'Erro ao atualizar categoria' });
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ 
+        errors: formatSequelizeErrors(error) 
+      });
+    }
+    console.error('Erro ao atualizar categoria:', error);
+    return res.status(500).json({ 
+      error: 'Ocorreu um erro ao processar sua solicitação' 
+    });
   }
 };
 
@@ -88,8 +136,10 @@ const deleteCategory = async (req, res) => {
     await category.destroy();
     return res.status(204).end();
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ error: 'Erro ao deletar categoria' });
+    console.error('Erro ao deletar categoria:', error);
+    return res.status(500).json({ 
+      error: 'Ocorreu um erro ao processar sua solicitação' 
+    });
   }
 };
 

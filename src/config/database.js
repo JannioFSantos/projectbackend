@@ -22,7 +22,14 @@ if (process.env.NODE_ENV === 'test') {
     define: {
       timestamps: true,
       underscored: true,
-    }
+    },
+    retry: {
+      max: 5,
+      match: [
+        'SQLITE_BUSY'
+      ]
+    },
+    dialectModule: require('sqlite3')
   });
 } else {
   // Usar MySQL para produção
