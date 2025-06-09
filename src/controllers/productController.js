@@ -98,18 +98,15 @@ const getProductById = async (req, res) => {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
 
-    // Obter categorias relacionadas
-    const categories = await ProductCategory.findAll({
-      where: { product_id: product.id },
-      include: [{
-        model: Category,
-        attributes: ['id', 'name']
-      }]
+    // Obter categorias relacionadas usando associação direta
+    const categories = await product.getCategories({
+      attributes: ['id', 'name'],
+      joinTableAttributes: []
     });
 
     const productWithCategories = {
       ...product.get({ plain: true }),
-      category_ids: categories.map(pc => pc.category.id)
+      category_ids: categories.map(c => c.id)
     };
 
     return res.status(200).json(productWithCategories);

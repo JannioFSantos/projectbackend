@@ -10,12 +10,13 @@ describe('Product Controller', () => {
   beforeAll(async () => {
     await sequelize.sync({ force: true });
     
-    // Criar usuário admin para testes com hash válido
-    const hashedPassword = await bcrypt.hash('test123', 10);
+    // Criar usuário para testes
+    const testPassword = 'test123';
+    const hashedPassword = await bcrypt.hash(testPassword, 10);
     await User.create({
-      firstname: 'Admin',
-      surname: 'Test',
-      email: 'admin@test.com',
+      firstname: 'Test',
+      surname: 'User',
+      email: 'test@example.com',
       password: hashedPassword
     });
 
@@ -23,13 +24,19 @@ describe('Product Controller', () => {
     const loginRes = await request(app)
       .post('/v1/user/token')
       .send({
-        email: 'admin@test.com',
-        password: 'test123'
+        email: 'test@example.com',
+        password: testPassword
       });
 
     authToken = loginRes.body.token;
     if (!authToken) {
       console.error('Falha ao obter token JWT:', loginRes.body);
+      console.log('Response status:', loginRes.status);
+      console.log('Response headers:', loginRes.headers);
+      console.log('Request body sent:', {
+        email: 'test@example.com',
+        password: 'test123'
+      });
     }
   });
 
@@ -84,6 +91,111 @@ describe('Product Controller', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('data');
+    });
+  });
+
+  describe('GET /v1/product/:id', () => {
+    let productId;
+
+    beforeAll(async () => {
+      // Criar produto para teste
+      const product = await Product.create({
+        name: 'Produto para Get',
+        slug: 'produto-get',
+        price: 50.00,
+        price_with_discount: 45.00,
+        enabled: true
+      });
+      productId = product.id;
+    });
+
+    it('deve retornar um produto pelo ID', async () => {
+      const response = await request(app)
+        .get(`/v1/product/${productId}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.id).toBe(productId);
+    });
+
+    it('deve retornar 404 para produto não encontrado', async () => {
+      const response = await request(app)
+        .get('/v1/product/999999')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('PUT /v1/product/:id', () => {
+    let productId;
+
+    beforeAll(async () => {
+      // Criar produto para teste
+      const product = await Product.create({
+        name: 'Produto para Update',
+        slug: 'produto-update',
+        price: 100.00,
+        price_with_discount: 90.00,
+        enabled: true
+      });
+      productId = product.id;
+    });
+
+    it('deve atualizar um produto', async () => {
+      const response = await request(app)
+        .put(`/v1/product/${productId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: 'Produto Atualizado',
+          price: 120.00,
+          price_with_discount: 110.00
+        });
+
+      expect(response.status).toBe(204);
+    });
+
+    it('deve retornar 404 para produto não encontrado', async () => {
+      const response = await request(app)
+        .put('/v1/product/999999')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: 'Produto Inexistente'
+        });
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('DELETE /v1/product/:id', () => {
+    let productId;
+
+    beforeEach(async () => {
+      // Criar produto para teste
+      const product = await Product.create({
+        name: 'Produto para Delete',
+        slug: 'produto-delete',
+        price: 30.00,
+        price_with_discount: 25.00,
+        enabled: true
+      });
+      productId = product.id;
+    });
+
+    it('deve deletar um produto', async () => {
+      const response = await request(app)
+        .delete(`/v1/product/${productId}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).toBe(204);
+    });
+
+    it('deve retornar 404 para produto não encontrado', async () => {
+      const response = await request(app)
+        .delete('/v1/product/999999')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).toBe(404);
     });
   });
 });
