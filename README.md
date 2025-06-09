@@ -97,12 +97,38 @@ npm test
 npm run test:watch
 ```
 
-## 📚 Documentação da API
+## 📚 Documentação da API com Swagger
 
-Acesse a documentação interativa em:
+A documentação interativa da API está disponível via Swagger UI. Após iniciar o servidor, acesse:
+
 ```
 http://localhost:3000/api-docs
 ```
+
+### Como usar o Swagger:
+
+1. Inicie o servidor:
+```bash
+npm run dev
+```
+
+2. Acesse http://localhost:3000/api-docs no navegador
+
+3. Para autenticação:
+   - Clique no endpoint "/user/token"
+   - Clique em "Try it out"
+   - Insira email e senha válidos (ex: "admin@test.com" e "test123")
+   - Execute e copie o token retornado
+
+4. Para usar endpoints protegidos:
+   - Clique no botão "Authorize" no topo
+   - Cole o token no formato: "Bearer [SEU_TOKEN]"
+   - Agora você pode testar todos endpoints protegidos
+
+5. Teste os endpoints diretamente na interface:
+   - Clique em "Try it out" em qualquer endpoint
+   - Preencha os parâmetros necessários
+   - Execute e veja os resultados
 
 ### Exemplo de Uso com cURL
 
