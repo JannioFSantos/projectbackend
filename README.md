@@ -12,7 +12,7 @@ API RESTful para gerenciamento de produtos, categorias e usuários.
 
 1. Clone o repositório
 ```bash
-git clone [repo-url]
+git clone [https://github.com/JannioFSantos/projectbackend]
 cd projetobackend
 ```
 
