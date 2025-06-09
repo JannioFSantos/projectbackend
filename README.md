@@ -1,177 +1,162 @@
-# Projeto Backend API
+# Projeto Backend API - E-commerce
 
-API RESTful para gerenciamento de produtos, categorias e usuários.
+API RESTful completa para sistema de e-commerce com autenticação JWT, CRUD de produtos, categorias e usuários.
 
-## Pré-requisitos
+## 📋 Pré-requisitos
+- Node.js 18+
+- MySQL 8+ ou SQLite (para desenvolvimento)
+- npm 9+
+- Git
 
-- Node.js 16+
-- MySQL 8+
-- npm/yarn
+## 🚀 Começando
 
-## Instalação
-
-1. Clone o repositório
+### Instalação
 ```bash
-git clone [https://github.com/JannioFSantos/projectbackend]
+git clone https://github.com/JannioFSantos/projectbackend.git
 cd projetobackend
-```
-
-2. Instale as dependências
-```bash
 npm install
 ```
 
-3. Configure o banco de dados
-- Crie um arquivo `.env` baseado no `.env.example`
-- Preencha as credenciais do banco de dados
+### Configuração
+1. Copie o arquivo .env.example para .env
+```bash
+cp .env.example .env
+```
 
-4. Execute as migrações
+2. Configure as variáveis de ambiente no .env
+
+3. Execute as migrações do banco de dados:
 ```bash
 npx sequelize-cli db:migrate
 ```
 
-## Executando o projeto
-
-Modo desenvolvimento (com hot reload):
+4. (Opcional) Popular banco com dados de teste:
 ```bash
+npx sequelize-cli db:seed:all
+```
+
+## 🏗️ Estrutura do Banco de Dados
+
+### Diagrama de Entidades
+```mermaid
+erDiagram
+    USER ||--o{ PRODUCT : creates
+    USER {
+        int id PK
+        string firstname
+        string surname
+        string email
+        string password
+    }
+    CATEGORY {
+        int id PK
+        string name
+        string slug
+        boolean use_in_menu
+    }
+    PRODUCT {
+        int id PK
+        string name
+        string slug
+        float price
+        float price_with_discount
+        int stock
+    }
+    PRODUCT_IMAGE {
+        int id PK
+        int product_id FK
+        string path
+    }
+    PRODUCT_OPTION {
+        int id PK
+        int product_id FK
+        string title
+        enum type
+        string values
+    }
+    PRODUCT_CATEGORY {
+        int product_id FK
+        int category_id FK
+    }
+```
+
+## 🔧 Execução
+
+### Modos de execução
+```bash
+# Desenvolvimento (com nodemon)
 npm run dev
-```
 
-Modo produção:
-```bash
+# Produção
 npm start
-```
 
-## Testes
-
-Executar todos os testes:
-```bash
+# Testes
 npm test
-```
 
-Executar testes com watch mode:
-```bash
+# Testes com watch mode
 npm run test:watch
 ```
 
-## Documentação da API (Swagger)
+## 📚 Documentação da API
 
-A API está documentada com Swagger UI. Para acessar a documentação interativa:
-
-1. Inicie o servidor:
-```bash
-npm run dev
-```
-
-2. Acesse no navegador:
+Acesse a documentação interativa em:
 ```
 http://localhost:3000/api-docs
 ```
 
-A documentação inclui:
-- Todos os endpoints disponíveis
-- Parâmetros esperados para cada rota
-- Exemplos de requisições e respostas
-- Possibilidade de testar as chamadas diretamente da interface
+### Exemplo de Uso com cURL
 
-Para adicionar documentação a novos endpoints, edite os comentários JSDoc nos arquivos de rotas seguindo o padrão OpenAPI 3.0.
-
-Exemplo de documentação para um endpoint:
-```javascript
-/**
- * @swagger
- * /v1/user:
- *   post:
- *     summary: Cria um novo usuário
- *     tags: [Users]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/User'
- *     responses:
- *       201:
- *         description: Usuário criado com sucesso
- *       400:
- *         description: Dados inválidos
- */
-```
-
-### Endpoints Principais
-
-#### Autenticação
-- `POST /v1/user/token` - Gera token JWT
-- `POST /v1/user` - Cria novo usuário
-
-#### Produtos
-- `GET /v1/product/search` - Lista produtos com filtros
-- `POST /v1/product` - Cria novo produto
-- `GET /v1/product/:id` - Obtém produto por ID
-- `PUT /v1/product/:id` - Atualiza produto
-- `DELETE /v1/product/:id` - Remove produto
-
-#### Categorias
-- `GET /v1/category/search` - Lista categorias
-- `POST /v1/category` - Cria nova categoria
-- `GET /v1/category/:id` - Obtém categoria por ID
-- `PUT /v1/category/:id` - Atualiza categoria
-- `DELETE /v1/category/:id` - Remove categoria
-
-## Testando o CRUD
-
-1. Primeiro obtenha um token JWT:
+1. Obter token JWT:
 ```bash
 curl -X POST http://localhost:3000/v1/user/token \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@test.com","password":"test123"}'
 ```
 
-2. Use o token para acessar os endpoints:
+2. Criar novo produto:
 ```bash
-# Criar produto
 curl -X POST http://localhost:3000/v1/product \
   -H "Authorization: Bearer [SEU_TOKEN]" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Produto Teste",
-    "slug": "produto-teste",
-    "price": 100.50,
-    "price_with_discount": 90.50,
-    "description": "Descrição do produto"
+    "name": "Tênis Esportivo",
+    "slug": "tenis-esportivo",
+    "price": 299.90,
+    "price_with_discount": 249.90,
+    "stock": 50,
+    "description": "Tênis para corrida",
+    "category_ids": [1, 3],
+    "images": [
+      {
+        "type": "image/png",
+        "content": "[base64]"
+      }
+    ],
+    "options": [
+      {
+        "title": "Tamanho",
+        "type": "text",
+        "values": "38,39,40,41,42"
+      }
+    ]
   }'
-
-# Listar produtos
-curl -X GET http://localhost:3000/v1/product/search \
-  -H "Authorization: Bearer [SEU_TOKEN]"
 ```
 
-## Variáveis de Ambiente
+## 🛠️ Tecnologias Utilizadas
+- Node.js
+- Express
+- Sequelize (ORM)
+- MySQL/SQLite
+- JWT (Autenticação)
+- Swagger (Documentação)
+- Jest (Testes)
 
-| Variável          | Descrição                          | Exemplo               |
-|-------------------|------------------------------------|-----------------------|
-| DB_NAME           | Nome do banco de dados             | projetobackend        |
-| DB_USER           | Usuário do banco                   | root                  |
-| DB_PASS           | Senha do banco                     | senha123              |
-| DB_HOST           | Host do banco                      | localhost             |
-| DB_PORT           | Porta do banco                     | 3306                  |
-| JWT_SECRET        | Segredo para tokens JWT            | segredo_super_secreto |
-| NODE_ENV          | Ambiente de execução               | development           |
+## 📝 Licença
+Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
-## Estrutura do Projeto
-
-```
-project-root/
-├── src/
-│   ├── config/       # Configurações
-│   ├── controllers/  # Lógica dos endpoints
-│   ├── middleware/   # Middlewares
-│   ├── models/       # Modelos do Sequelize
-│   ├── routes/       # Definição de rotas
-│   ├── services/     # Lógica de negócio
-│   ├── app.js        # Config Express
-│   └── server.js     # Inicialização
-├── tests/            # Testes automatizados
-├── .env              # Variáveis de ambiente
-├── .gitignore
-└── package.json
+## 👨‍💻 Contribuição
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
